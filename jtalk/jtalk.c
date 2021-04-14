@@ -3572,8 +3572,9 @@ bool generate_wavFile(OpenJTalk *oj, const char *txt, FILE *wavfp)
 	return Open_JTalk_synthesis(oj->open_jtalk, txt, wavfp, NULL);
 }
 
-OPENJTALK_DLL_API bool OPENJTALK_CONVENTION createWav(OpenJTalk *oj, const char *txt, short *data)
+OPENJTALK_DLL_API bool OPENJTALK_CONVENTION openjtalk_createPCM(OpenJTalk *oj, const char *txt, short **data, size_t *size)
 {
+    printf("%s", txt);
     if (!oj)
     {
         return false;
@@ -3584,18 +3585,22 @@ OPENJTALK_DLL_API bool OPENJTALK_CONVENTION createWav(OpenJTalk *oj, const char 
         return false;
     }
 
-    size_t size;
     size_t sampling_frequency;
     if (Open_JTalk_generate_sounddata(
             oj->open_jtalk,
             txt,
-            &data,
-            &size,
+            data,
+            size,
             &sampling_frequency))
     {
         return true;
     }
     return false;
+}
+
+OPENJTALK_DLL_API void OPENJTALK_CONVENTION openjtalk_clearData(short *data)
+{
+    free(data);
 }
 
 void synthesis(OpenJTalk *oj, const char *txt)
