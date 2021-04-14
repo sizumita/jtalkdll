@@ -3572,6 +3572,32 @@ bool generate_wavFile(OpenJTalk *oj, const char *txt, FILE *wavfp)
 	return Open_JTalk_synthesis(oj->open_jtalk, txt, wavfp, NULL);
 }
 
+OPENJTALK_DLL_API bool OPENJTALK_CONVENTION createWav(OpenJTalk *oj, const char *txt, short *data)
+{
+    if (!oj)
+    {
+        return false;
+    }
+
+    if (txt == NULL || strlen(txt) == 0)
+    {
+        return false;
+    }
+
+    size_t size;
+    size_t sampling_frequency;
+    if (Open_JTalk_generate_sounddata(
+            oj->open_jtalk,
+            txt,
+            &data,
+            &size,
+            &sampling_frequency))
+    {
+        return true;
+    }
+    return false;
+}
+
 void synthesis(OpenJTalk *oj, const char *txt)
 {
 	g_psd->length = 0;

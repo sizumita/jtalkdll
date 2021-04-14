@@ -339,6 +339,8 @@ OPENJTALK_DLL_API void OPENJTALK_CONVENTION openjtalk_speakAsync(OpenJTalk *oj, 
 OPENJTALK_DLL_API void OPENJTALK_CONVENTION openjtalk_speakAsyncSjis(OpenJTalk *oj, const char *text);
 OPENJTALK_DLL_API void OPENJTALK_CONVENTION openjtalk_speakAsyncU16(OpenJTalk *oj, const char16_t *text);
 
+OPENJTALK_DLL_API bool OPENJTALK_CONVENTION createWav(OpenJTalk *oj, const char *txt, short *data);
+
 // 非同期発声を一時停止する。この一時停止はopenjtalk_resumeによってのみ再開される。
 // 一時停止中の再度の一時停止は何もしない。
 // 発声の停止が行われると、一時停止は無効となり、発声は完了する。
