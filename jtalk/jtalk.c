@@ -3572,7 +3572,7 @@ bool generate_wavFile(OpenJTalk *oj, const char *txt, FILE *wavfp)
 	return Open_JTalk_synthesis(oj->open_jtalk, txt, wavfp, NULL);
 }
 
-OPENJTALK_DLL_API bool OPENJTALK_CONVENTION openjtalk_createPCM(OpenJTalk *oj, const char *txt, short **data, size_t *size)
+OPENJTALK_DLL_API bool OPENJTALK_CONVENTION openjtalk_generatePCM(OpenJTalk *oj, const char *txt, short **data, size_t *size)
 {
     printf("%s", txt);
     if (!oj)
