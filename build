@@ -29,6 +29,10 @@ make
 if [[ $(uname) =~ $re ]]; then
     make install/strip
 else
-    sudo make install/strip
+    if test -f /.dockerenv; then
+      make install/strip
+    else
+      sudo make install/strip
+    fi
 fi
 cd ..
