@@ -204,7 +204,6 @@ char g_ini_dir[MAX_PATH];
 //char g_dic_dir_ini[MAX_PATH];
 
 // 音声データ
-SpeakData g_speakData, *g_psd = &g_speakData;
 
 // 最近のエラー（OpenJTalkオブジェクトが利用できないときのため）
 OpenjtalkErrors g_lastError = OPENJTALKERROR_NO_ERROR;
@@ -3311,127 +3310,6 @@ check_charset:
 ** オーディオデータ出力関連関数
 */
 
-#if (!defined(_WIN32) || defined(__CYGWIN__) || defined(__MINGW32__)) || defined(WINDOWS_PORTAUDIO)
-void speak_sync(OpenJTalk *oj)
-{
-	if (g_verbose)
-	{
-		console_message(u8"同期発声開始\n");
-	}
-
-	g_psd->finished = false;
-	g_psd->speaking = false;
-	g_psd->pause = false;
-	g_psd->paused = false;
-	g_psd->stop = false;
-
-	PaStreamParameters outputParameters;
-	PaStream *stream;
-	PaError err;
-
-	outputParameters.device = Pa_GetDefaultOutputDevice();
-	if (outputParameters.device == paNoDevice)
-	{
-		goto exit_func;
-	}
-	outputParameters.channelCount = 1;
-	outputParameters.sampleFormat = paInt16;
-	outputParameters.suggestedLatency = Pa_GetDeviceInfo(outputParameters.device)->defaultLowOutputLatency;
-	outputParameters.hostApiSpecificStreamInfo = NULL;
-
-	err = Pa_OpenStream(&stream, NULL, &outputParameters, (double)g_psd->sampling_frequency, OPENJTALK_BLOCKSIZE, paClipOff, NULL, NULL);
-	if (err != paNoError)
-	{
-		goto exit_func;
-	}
-
-	g_psd->speaking = true;
-	err = Pa_StartStream(stream);
-	if (err != paNoError)
-	{
-		goto exit_func;
-	}
-
-	for (unsigned int i = 0; i * OPENJTALK_BLOCKSIZE < g_psd->length; i++)
-	{
-		if (g_psd->stop)
-		{
-			break;
-		}
-
-		err = Pa_WriteStream(stream, &g_psd->data[i * OPENJTALK_BLOCKSIZE], OPENJTALK_BLOCKSIZE);
-		if (err != paNoError)
-		{
-			break;
-		}
-	}
-	Pa_CloseStream(stream);
-
-exit_func:
-	if (g_psd->data)
-	{
-		free(g_psd->data);
-		g_psd->data = NULL;
-	}
-
-	g_psd->finished = true;
-	g_psd->speaking = false;
-	g_psd->pause = false;
-	g_psd->paused = false;
-	g_psd->stop = false;
-
-	if (g_verbose)
-	{
-		console_message(u8"同期発声完了\n");
-	}
-}
-#else
-#endif
-
-#if (!defined(_WIN32) || defined(__CYGWIN__) || defined(__MINGW32__)) || defined(WINDOWS_PORTAUDIO)
-static int speak_pa_callback(
-	const void *inputBuffer,
-	void *outputBuffer,
-	unsigned long framesPerBuffer,
-	const PaStreamCallbackTimeInfo *timeInfo,
-	PaStreamCallbackFlags statusFlags,
-	void *userData)
-{
-	SpeakData *data = (SpeakData *)userData;
-	if (data == NULL)
-	{
-		return paAbort;
-	}
-
-	if (data->data == NULL)
-	{
-		return paAbort;
-	}
-
-	if (data->stop || data->pause)
-	{
-		return paAbort;
-	}
-
-	if (data->counter * OPENJTALK_BLOCKSIZE >= data->length)
-	{
-		return paComplete;
-	}
-
-	short *p = (short *)outputBuffer;
-	short *s = (short *)data->data + OPENJTALK_BLOCKSIZE * data->counter;
-	for (int i = 0; i < OPENJTALK_BLOCKSIZE; i++)
-	{
-		*p++ = *s++;
-		if (data->stop || data->pause)
-		{
-			return paAbort;
-		}
-	}
-	data->counter++;
-	return paContinue;
-}
-
 static void speak_pa_finished(void *userData)
 {
 	SpeakData *data = (SpeakData *)userData;
@@ -3476,102 +3354,6 @@ static void speak_pa_finished(void *userData)
 	}
 }
 
-void speak_async(OpenJTalk *oj)
-{
-	if (g_verbose)
-	{
-		if (g_psd->counter == 0)
-		{
-			console_message(u8"非同期発声開始！\n");
-		}
-		else
-		{
-			console_message(u8"非同期発声再開\n");
-		}
-	}
-
-	g_psd->finished = false;
-	g_psd->speaking = false;
-	g_psd->pause = false;
-	g_psd->paused = false;
-	g_psd->stop = false;
-
-	PaStreamParameters outputParameters;
-	PaStream *stream;
-	PaError err;
-
-	outputParameters.device = Pa_GetDefaultOutputDevice();
-	if (outputParameters.device == paNoDevice)
-	{
-		goto exit_func;
-	}
-	outputParameters.channelCount = 1;
-	outputParameters.sampleFormat = paInt16;
-	outputParameters.suggestedLatency = Pa_GetDeviceInfo(outputParameters.device)->defaultLowOutputLatency;
-	outputParameters.hostApiSpecificStreamInfo = NULL;
-
-	err = Pa_OpenStream(
-		&stream,
-		NULL,
-		&outputParameters,
-		(double)g_psd->sampling_frequency,
-		OPENJTALK_BLOCKSIZE,
-		paClipOff,
-		speak_pa_callback,
-		g_psd);
-	if (err != paNoError)
-	{
-		goto exit_func;
-	}
-
-	err = Pa_SetStreamFinishedCallback(stream, &speak_pa_finished);
-	if (err != paNoError)
-	{
-		goto exit_func;
-	}
-
-	g_psd->speaking = true;
-	err = Pa_StartStream(stream);
-	if (err != paNoError)
-	{
-		goto exit_func;
-	}
-
-	sleep_internal(100);
-	return;
-
-exit_func:
-	if (g_psd->data)
-	{
-		free(g_psd->data);
-		g_psd->data = NULL;
-	}
-	g_psd->finished = true;
-	g_psd->speaking = false;
-	g_psd->pause = false;
-	g_psd->paused = false;
-	g_psd->stop = false;
-
-	return;
-}
-
-#else
-#endif
-
-bool generate_wavFile(OpenJTalk *oj, const char *txt, FILE *wavfp)
-{
-	if (!oj)
-	{
-		return false;
-	}
-
-	g_psd->length = 0;
-	g_psd->sampling_frequency = 0;
-	g_psd->data = NULL;
-
-	return Open_JTalk_synthesis(oj->open_jtalk, txt, wavfp, NULL);
-}
-
 OPENJTALK_DLL_API bool OPENJTALK_CONVENTION openjtalk_generatePCM(OpenJTalk *oj, const char *txt, short **data, size_t *size)
 {
     if (!oj)
@@ -3600,84 +3382,6 @@ OPENJTALK_DLL_API bool OPENJTALK_CONVENTION openjtalk_generatePCM(OpenJTalk *oj,
 OPENJTALK_DLL_API void OPENJTALK_CONVENTION openjtalk_clearData(short *data)
 {
     free(data);
-}
-
-void synthesis(OpenJTalk *oj, const char *txt)
-{
-	g_psd->length = 0;
-	g_psd->sampling_frequency = 0;
-	g_psd->data = NULL;
-
-	if (!oj)
-	{
-		return;
-	}
-
-	if (txt == NULL || strlen(txt) == 0)
-	{
-		return;
-	}
-
-	if (g_verbose)
-	{
-		console_message_string(u8"text： %s\n", (char*)txt);
-	}
-
-	g_psd->length = 0;
-	g_psd->sampling_frequency = 0;
-	g_psd->data = NULL;
-
-	short *sounddata;
-	size_t size;
-	size_t sampling_frequency;
-	if (Open_JTalk_generate_sounddata(
-			oj->open_jtalk,
-			txt,
-			&sounddata,
-			&size,
-			&sampling_frequency))
-	{
-		g_psd->length = size;
-		g_psd->sampling_frequency = sampling_frequency;
-		g_psd->data = sounddata;
-	}
-}
-
-void synthesisU8(OpenJTalk *oj, const char *txt)
-{
-#if defined(_WIN32) && !defined(__CYGWIN__) && !defined(__MINGW32__)
-	if (g_verbose)
-	{
-		console_message("charset: UTF-8\n");
-	}
-#endif
-	synthesis(oj, txt);
-}
-
-void synthesisSjis(OpenJTalk *oj, const char *txt)
-{
-#if defined(_WIN32)
-	if (g_verbose)
-	{
-		console_message("charset: SJIS\n");
-	}
-#endif
-	char *txt_utf8 = sjistou8(txt);
-	synthesis(oj, txt_utf8);
-	free(txt_utf8);
-}
-
-void synthesisU16(OpenJTalk *oj, const char16_t *txt)
-{
-#if defined(_WIN32)
-	if (g_verbose)
-	{
-		console_message("charset: UTF-16\n");
-	}
-#endif
-	char *txt_utf8 = u16tou8((char16_t *)txt);
-	synthesis(oj, txt_utf8);
-	free(txt_utf8);
 }
 
 /*****************************************************************
@@ -5104,10 +4808,6 @@ OPENJTALK_DLL_API void OPENJTALK_CONVENTION jtalkdll_copyright()
 
 OpenJTalk *openjtalk_initialize_sub(const char *voice, const char *dic, const char *voiceDir)
 {
-	g_psd->length = 0;
-	g_psd->sampling_frequency = 0;
-	g_psd->data = NULL;
-	g_psd->onFinished = NULL;
 
 #ifdef _DEBUG
 	g_verbose = true;
@@ -5289,16 +4989,10 @@ OPENJTALK_DLL_API void OPENJTALK_CONVENTION openjtalk_clear(OpenJTalk *oj)
 		g_lastError = OPENJTALKERROR_OBJECT_POINTER_IS_NULL;
 		return;
 	}
-	openjtalk_stop(oj);
 #if (!defined(_WIN32) || defined(__CYGWIN__) || defined(__MINGW32__)) || defined(WINDOWS_PORTAUDIO)
 	Pa_Terminate();
 #else
 #endif
-	if (g_psd != NULL && g_psd->data)
-	{
-		free(g_psd->data);
-		g_psd->data = NULL;
-	}
 	Open_JTalk_clear(oj->open_jtalk);
 }
 
@@ -5309,193 +5003,12 @@ OPENJTALK_DLL_API void OPENJTALK_CONVENTION openjtalk_refresh(OpenJTalk *oj)
 		g_lastError = OPENJTALKERROR_OBJECT_POINTER_IS_NULL;
 		return;
 	}
-	openjtalk_stop(oj);
-
-	if (g_psd != NULL && g_psd->data)
-	{
-		free(g_psd->data);
-		g_psd->data = NULL;
-	}
 
 	Open_JTalk_refresh(oj->open_jtalk);
 
 	if (!JTalkData_initialize(oj))
 	{
 		return;
-	}
-}
-
-void speakasync(OpenJTalk *oj)
-{
-	g_psd->stop = false;
-	g_psd->pause = false;
-	g_psd->counter = 0;
-	if (g_psd->length != 0)
-	{
-		speak_async(oj);
-	}
-}
-
-OPENJTALK_DLL_API void OPENJTALK_CONVENTION openjtalk_speakAsyncSjis(OpenJTalk *oj, const char *text)
-{
-	if (!oj)
-	{
-		g_lastError = OPENJTALKERROR_OBJECT_POINTER_IS_NULL;
-		return;
-	}
-	openjtalk_stop(oj);
-	synthesisSjis(oj, text);
-	speakasync(oj);
-}
-
-OPENJTALK_DLL_API void OPENJTALK_CONVENTION openjtalk_speakAsync(OpenJTalk *oj, const char *text)
-{
-	if (!oj)
-	{
-		g_lastError = OPENJTALKERROR_OBJECT_POINTER_IS_NULL;
-		return;
-	}
-	openjtalk_stop(oj);
-	synthesisU8(oj, text);
-	speakasync(oj);
-}
-
-OPENJTALK_DLL_API void OPENJTALK_CONVENTION openjtalk_speakAsyncU16(OpenJTalk *oj, const char16_t *text)
-{
-	if (!oj)
-	{
-		g_lastError = OPENJTALKERROR_OBJECT_POINTER_IS_NULL;
-		return;
-	}
-	openjtalk_stop(oj);
-	synthesisU16(oj, text);
-	char *temp = u16tou8(text);
-	free(temp);
-	speakasync(oj);
-}
-
-OPENJTALK_DLL_API void OPENJTALK_CONVENTION openjtalk_speakSyncSjis(OpenJTalk *oj, const char *text)
-{
-	if (!oj)
-	{
-		g_lastError = OPENJTALKERROR_OBJECT_POINTER_IS_NULL;
-		return;
-	}
-	openjtalk_stop(oj);
-	synthesisSjis(oj, text);
-	if (g_psd->length != 0)
-	{
-		speak_sync(oj);
-	}
-}
-
-OPENJTALK_DLL_API void OPENJTALK_CONVENTION openjtalk_speakSync(OpenJTalk *oj, const char *text)
-{
-	if (!oj)
-	{
-		g_lastError = OPENJTALKERROR_OBJECT_POINTER_IS_NULL;
-		return;
-	}
-	openjtalk_stop(oj);
-	synthesisU8(oj, text);
-	if (g_psd->length != 0)
-	{
-		speak_sync(oj);
-	}
-}
-
-OPENJTALK_DLL_API void OPENJTALK_CONVENTION openjtalk_speakSyncU16(OpenJTalk *oj, const char16_t *text)
-{
-	if (!oj)
-	{
-		g_lastError = OPENJTALKERROR_OBJECT_POINTER_IS_NULL;
-		return;
-	}
-	openjtalk_stop(oj);
-	synthesisU16(oj, text);
-	if (g_psd->length != 0)
-	{
-		speak_sync(oj);
-	}
-}
-
-OPENJTALK_DLL_API void OPENJTALK_CONVENTION openjtalk_stop(OpenJTalk *oj)
-{
-	if (!oj)
-	{
-		g_lastError = OPENJTALKERROR_OBJECT_POINTER_IS_NULL;
-		return;
-	}
-
-	g_psd->stop = true;
-	do
-	{
-		sleep_internal(100);
-	} while (g_psd->speaking);
-	g_psd->stop = false;
-
-	g_psd->counter = 0;
-	g_psd->finished = true;
-	g_psd->pause = false;
-	g_psd->paused = false;
-
-	if (g_psd->data)
-	{
-		free(g_psd->data);
-		g_psd->data = NULL;
-	}
-}
-
-OPENJTALK_DLL_API void OPENJTALK_CONVENTION openjtalk_pause(OpenJTalk *oj)
-{
-	if (!oj)
-	{
-		g_lastError = OPENJTALKERROR_OBJECT_POINTER_IS_NULL;
-		return;
-	}
-
-	if (g_psd->stop)
-	{
-		return;
-	}
-
-	if (g_verbose)
-	{
-		console_message(u8"[PAUSE処理開始]\n");
-	}
-	g_psd->pause = true;
-	do
-	{
-		sleep_internal(100);
-	} while (g_psd->speaking);
-	g_psd->pause = false;
-	if (g_verbose)
-	{
-		console_message(u8"[PAUSE処理終了]\n");
-	}
-}
-
-OPENJTALK_DLL_API void OPENJTALK_CONVENTION openjtalk_resume(OpenJTalk *oj)
-{
-	if (!oj)
-	{
-		g_lastError = OPENJTALKERROR_OBJECT_POINTER_IS_NULL;
-		return;
-	}
-
-	if (g_psd->finished)
-	{
-		return;
-	}
-
-	if (!g_psd->paused)
-	{
-		return;
-	}
-
-	if (g_psd->length != 0)
-	{
-		speak_async(oj);
 	}
 }
 
@@ -5507,66 +5020,6 @@ OPENJTALK_DLL_API void OPENJTALK_CONVENTION openjtalk_wait(OpenJTalk *oj, int du
 		return;
 	}
 	sleep_internal(duration);
-}
-
-OPENJTALK_DLL_API bool OPENJTALK_CONVENTION openjtalk_isSpeaking(OpenJTalk *oj)
-{
-	if (!oj)
-	{
-		g_lastError = OPENJTALKERROR_OBJECT_POINTER_IS_NULL;
-		return false;
-	}
-	return g_psd->speaking;
-}
-OPENJTALK_DLL_API int OPENJTALK_CONVENTION openjtalk_isSpeaking2(OpenJTalk *oj)
-{
-	return openjtalk_isSpeaking(oj);
-}
-
-OPENJTALK_DLL_API bool OPENJTALK_CONVENTION openjtalk_isPaused(OpenJTalk *oj)
-{
-	if (!oj)
-	{
-		g_lastError = OPENJTALKERROR_OBJECT_POINTER_IS_NULL;
-		return false;
-	}
-	return g_psd->paused;
-}
-OPENJTALK_DLL_API int OPENJTALK_CONVENTION openjtalk_isPaused2(OpenJTalk *oj)
-{
-	return openjtalk_isPaused(oj);
-}
-
-OPENJTALK_DLL_API bool OPENJTALK_CONVENTION openjtalk_isFinished(OpenJTalk *oj)
-{
-	if (!oj)
-	{
-		g_lastError = OPENJTALKERROR_OBJECT_POINTER_IS_NULL;
-		return false;
-	}
-	return g_psd->finished;
-}
-OPENJTALK_DLL_API int OPENJTALK_CONVENTION openjtalk_isFinished2(OpenJTalk *oj)
-{
-	return openjtalk_isFinished(oj);
-}
-
-OPENJTALK_DLL_API void OPENJTALK_CONVENTION openjtalk_waitUntilDone(OpenJTalk *oj)
-{
-	if (!oj)
-	{
-		g_lastError = OPENJTALKERROR_OBJECT_POINTER_IS_NULL;
-		return;
-	}
-	do
-	{
-		sleep_internal(100);
-	} while (g_psd->speaking);
-}
-
-OPENJTALK_DLL_API void OPENJTALK_CONVENTION openjtalk_waitUntilFinished(OpenJTalk *oj)
-{
-	openjtalk_waitUntilDone(oj);
 }
 
 /*****************************************************************
@@ -7004,201 +6457,9 @@ OPENJTALK_DLL_API char16_t *OPENJTALK_CONVENTION openjtalk_getFullVoicePathU16(O
 	return res2;
 }
 
-OPENJTALK_DLL_API void OPENJTALK_CONVENTION openjtalk_test(OpenJTalk *oj, void *text)
-{
-	if (!oj)
-	{
-		g_lastError = OPENJTALKERROR_OBJECT_POINTER_IS_NULL;
-		return;
-	}
-
-	oj->errorCode = OPENJTALKERROR_NO_ERROR;
-	g_psd->data = NULL;
-
-	bool temp = g_verbose;
-	g_verbose = true;
-	fprintf(stderr, u8"***** test start *****\n");
-
-	if (text != NULL)
-	{
-		fprintf(stderr, u8"* hex dump\n");
-		char *temp_char = (char *)text;
-		for (int i = 0; i <= 127; i++)
-		{
-			fprintf(stderr, u8"%02x ", temp_char[i] & 0xff);
-			if (i % 16 == 15)
-			{
-				fprintf(stderr, u8"\n");
-			}
-		}
-		fprintf(stderr, u8"\n");
-
-		fprintf(stderr, u8"* encoding in UTF-16le\n");
-		char16_t *temp_char16 = (char16_t *)text;
-		openjtalk_speakSyncU16(oj, temp_char16);
-
-		fprintf(stderr, u8"* encoding in UTF-8\n");
-		char *temp_char_utf8 = (char *)text;
-		openjtalk_speakSync(oj, temp_char_utf8);
-
-		fprintf(stderr, u8"* encoding in SHIFT_JIS\n");
-		char *temp_charSjis = (char *)text;
-		openjtalk_speakSyncSjis(oj, temp_charSjis);
-	}
-	else
-	{
-		openjtalk_speakSync(oj, u8"聞こえますか？");
-	}
-	fprintf(stderr, u8"***** finished *****\n\n");
-	g_verbose = temp;
-}
-
 OPENJTALK_DLL_API void OPENJTALK_CONVENTION openjtalk_setVerbose(bool sw)
 {
 	g_verbose = sw;
-}
-
-OPENJTALK_DLL_API bool OPENJTALK_CONVENTION openjtalk_speakToFileSjis(OpenJTalk *oj, const char *textSjis, const char *fileSjis)
-{
-	if (!oj)
-	{
-		g_lastError = OPENJTALKERROR_OBJECT_POINTER_IS_NULL;
-		return false;
-	}
-
-	oj->errorCode = OPENJTALKERROR_NO_ERROR;
-	if (fileSjis == NULL || textSjis == NULL)
-	{
-		oj->errorCode = OPENJTALKERROR_STRING_IS_NULL_OR_EMPTY;
-		return false;
-	}
-	if (strlen(fileSjis) == 0 || strlen(textSjis) == 0)
-	{
-		oj->errorCode = OPENJTALKERROR_STRING_IS_NULL_OR_EMPTY;
-		return false;
-	}
-#if defined(_WIN32) && !defined(__CYGWIN__) && !defined(__MINGW32__)
-	FILE *wavfp = fopen(fileSjis, u8"wb");
-#else
-	char file_utf8[MAX_PATH];
-	if (!sjistou8_path(fileSjis, file_utf8))
-	{
-		return false;
-	}
-	FILE *wavfp = fopen(file_utf8, "wb");
-#endif
-	if (!wavfp)
-	{
-		oj->errorCode = OPENJTALKERROR_FILE_OPEN_ERROR;
-		return false;
-	}
-	char *buf = sjistou8(textSjis);
-	if (!buf)
-	{
-		return false;
-	}
-	bool result = generate_wavFile(oj, buf, wavfp);
-	free(buf);
-	fclose(wavfp);
-	return result;
-}
-OPENJTALK_DLL_API int OPENJTALK_CONVENTION openjtalk_speakToFileSjis2(OpenJTalk *oj, const char *textSjis, const char *fileSjis)
-{
-	return openjtalk_speakToFileSjis(oj, textSjis, fileSjis);
-}
-
-OPENJTALK_DLL_API bool OPENJTALK_CONVENTION openjtalk_speakToFile(OpenJTalk *oj, const char *text, const char *file_utf8)
-{
-	if (!oj)
-	{
-		g_lastError = OPENJTALKERROR_OBJECT_POINTER_IS_NULL;
-		return false;
-	}
-
-	oj->errorCode = OPENJTALKERROR_NO_ERROR;
-	if (file_utf8 == NULL || text == NULL)
-	{
-		oj->errorCode = OPENJTALKERROR_STRING_IS_NULL_OR_EMPTY;
-		return false;
-	}
-	if (strlen(file_utf8) == 0 || strlen(text) == 0)
-	{
-		oj->errorCode = OPENJTALKERROR_STRING_IS_NULL_OR_EMPTY;
-		return false;
-	}
-#if defined(_WIN32) && !defined(__CYGWIN__) && !defined(__MINGW32__)
-	wchar_t file_utf16[MAX_PATH];
-	if (!u8tou16_path(file_utf8, file_utf16))
-	{
-		return false;
-	}
-	FILE *wavfp = _wfopen((wchar_t *)file_utf16, u"wb");
-#else
-	FILE *wavfp = fopen(file_utf8, "wb");
-#endif
-	if (!wavfp)
-	{
-		oj->errorCode = OPENJTALKERROR_FILE_OPEN_ERROR;
-		return false;
-	}
-	bool result = generate_wavFile(oj, text, wavfp);
-	fclose(wavfp);
-	return result;
-}
-OPENJTALK_DLL_API int OPENJTALK_CONVENTION openjtalk_speakToFile2(OpenJTalk *oj, const char *text, const char *file_utf8)
-{
-	return openjtalk_speakToFile(oj, text, file_utf8);
-}
-
-OPENJTALK_DLL_API bool OPENJTALK_CONVENTION openjtalk_speakToFileU16(OpenJTalk *oj, const char16_t *text, const char16_t *file)
-{
-	if (!oj)
-	{
-		g_lastError = OPENJTALKERROR_OBJECT_POINTER_IS_NULL;
-		return false;
-	}
-	oj->errorCode = OPENJTALKERROR_NO_ERROR;
-	if (file == NULL || text == NULL)
-	{
-		oj->errorCode = OPENJTALKERROR_STRING_IS_NULL_OR_EMPTY;
-		return false;
-	}
-	if (strlenU16(file) == 0 || strlenU16(text) == 0)
-	{
-		oj->errorCode = OPENJTALKERROR_STRING_IS_NULL_OR_EMPTY;
-		return false;
-	}
-#if defined(_WIN32) && !defined(__CYGWIN__) && !defined(__MINGW32__)
-	FILE *wavfp = _wfopen((wchar_t *)file, u"wb");
-#else
-	char pathU8[MAX_PATH];
-	if (!u16tou8_path(file, pathU8))
-	{
-		return false;
-	}
-	FILE *wavfp = fopen(pathU8, "wb");
-#endif
-	if (!wavfp)
-	{
-		oj->errorCode = OPENJTALKERROR_FILE_OPEN_ERROR;
-		return false;
-	}
-	char *buf = u16tou8(text);
-	if (!buf)
-	{
-		return false;
-	}
-	bool result = generate_wavFile(oj, buf, wavfp);
-	if (buf)
-	{
-		free(buf);
-	}
-	fclose(wavfp);
-	return result;
-}
-OPENJTALK_DLL_API int OPENJTALK_CONVENTION openjtalk_speakToFileU162(OpenJTalk *oj, const char16_t *text, const char16_t *file)
-{
-	return openjtalk_speakToFileU16(oj, text, file);
 }
 
 // 実行中のOSの取得
@@ -7335,13 +6596,6 @@ OPENJTALK_DLL_API void OPENJTALK_CONVENTION openjtalk_free(void *mem)
 	{
 		free(mem);
 	}
-}
-
-// 完了時に実行する関数の登録。
-// 一つだけが登録できる、リセットはNULLを登録する。
-OPENJTALK_DLL_API void OPENJTALK_CONVENTION openjtalk_setOnFinishedCallback(OpenJTalk *oj, void (*callback)(void))
-{
-	g_psd->onFinished = callback;
 }
 
 #if defined(_WIN32)

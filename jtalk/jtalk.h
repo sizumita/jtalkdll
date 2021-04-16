@@ -325,66 +325,13 @@ OPENJTALK_DLL_API char *OPENJTALK_CONVENTION openjtalk_getFullVoicePath(OpenJTal
 OPENJTALK_DLL_API char *OPENJTALK_CONVENTION openjtalk_getFullVoicePathSjis(OpenJTalk *oj, const char *path, char *buffer);
 OPENJTALK_DLL_API char16_t *OPENJTALK_CONVENTION openjtalk_getFullVoicePathU16(OpenJTalk *oj, const char16_t *path, char16_t *buffer);
 
-// 同期発声。完了するまでこの関数から戻らない。
-OPENJTALK_DLL_API void OPENJTALK_CONVENTION openjtalk_speakSync(OpenJTalk *oj, const char *text);
-OPENJTALK_DLL_API void OPENJTALK_CONVENTION openjtalk_speakSyncSjis(OpenJTalk *oj, const char *text);
-OPENJTALK_DLL_API void OPENJTALK_CONVENTION openjtalk_speakSyncU16(OpenJTalk *oj, const char16_t *text);
-
-// 非同期発声。発声を開始したらこの関数から戻る。
-// この関数から戻った後は、次の関数によって音声の操作および状態の取得、待機を行う。
-// openjtalk_pause、openjtalk_resume、openjtalk_stop、openjtalk_isSpeaking、
-// openjtalk_isPaused、openjtalk_isFinished、openjtalk_waitUntilDone、openjtalk_waitUntilFinished、
-// openjtalk_wait(0)
-OPENJTALK_DLL_API void OPENJTALK_CONVENTION openjtalk_speakAsync(OpenJTalk *oj, const char *text);
-OPENJTALK_DLL_API void OPENJTALK_CONVENTION openjtalk_speakAsyncSjis(OpenJTalk *oj, const char *text);
-OPENJTALK_DLL_API void OPENJTALK_CONVENTION openjtalk_speakAsyncU16(OpenJTalk *oj, const char16_t *text);
-
+// 音声出力
 OPENJTALK_DLL_API bool OPENJTALK_CONVENTION openjtalk_generatePCM(OpenJTalk *oj, const char *txt, short **data, size_t *size);
 OPENJTALK_DLL_API void OPENJTALK_CONVENTION openjtalk_clearData(short *data);
-
-// 非同期発声を一時停止する。この一時停止はopenjtalk_resumeによってのみ再開される。
-// 一時停止中の再度の一時停止は何もしない。
-// 発声の停止が行われると、一時停止は無効となり、発声は完了する。
-// 同期・非同期発声関数が呼び出されると、それが実行される前に、一時停止されていた発声は完了する。
-OPENJTALK_DLL_API void OPENJTALK_CONVENTION openjtalk_pause(OpenJTalk *oj);
-
-// 非同期発声の一時停止からの再開。停止位置からの音声変換の再開ではなく音声データの再生再開。
-OPENJTALK_DLL_API void OPENJTALK_CONVENTION openjtalk_resume(OpenJTalk *oj);
-
-// 非同期発声の強制停止。一時停止中の場合は、再開は無効となる。
-OPENJTALK_DLL_API void OPENJTALK_CONVENTION openjtalk_stop(OpenJTalk *oj);
-
-// 非同期発声が発声中かどうか（一時停止中は偽）
-// 一時停止の可能性がないときは、openjtalk_isFinishedの否定。
-OPENJTALK_DLL_API bool OPENJTALK_CONVENTION openjtalk_isSpeaking(OpenJTalk *oj);
-OPENJTALK_DLL_API int OPENJTALK_CONVENTION openjtalk_isSpeaking2(OpenJTalk *oj);
-
-// 一時停止中かどうか
-OPENJTALK_DLL_API bool OPENJTALK_CONVENTION openjtalk_isPaused(OpenJTalk *oj);
-OPENJTALK_DLL_API int OPENJTALK_CONVENTION openjtalk_isPaused2(OpenJTalk *oj);
-
-// 非同期発声が終了したかどうか。なお初回発声前は呼び出す意味が無いが、結果は便宜上真とする。
-OPENJTALK_DLL_API bool OPENJTALK_CONVENTION openjtalk_isFinished(OpenJTalk *oj);
-OPENJTALK_DLL_API int OPENJTALK_CONVENTION openjtalk_isFinished2(OpenJTalk *oj);
-
-// 完了時に実行する関数の登録。一つだけが登録できる、リセットはNULLを登録する。
-// 再生スレッドからの呼び出しなので、競合しないよう取り扱い注意
-OPENJTALK_DLL_API void OPENJTALK_CONVENTION openjtalk_setOnFinishedCallback(OpenJTalk *oj, void(*callback)(void));
-
-// 非同期発声が完了するまで待機する
-OPENJTALK_DLL_API void OPENJTALK_CONVENTION openjtalk_waitUntilDone(OpenJTalk *oj);
-OPENJTALK_DLL_API void OPENJTALK_CONVENTION openjtalk_waitUntilFinished(OpenJTalk *oj);
 
 // 指定ミリ秒待機する。非同期発声は続く。durationが0のときだけ、openjtalk_waitUntilDoneと同義。
 OPENJTALK_DLL_API void OPENJTALK_CONVENTION openjtalk_wait(OpenJTalk *oj, int duration);
 
-// 指定ファイルに音声を記録する
-OPENJTALK_DLL_API bool OPENJTALK_CONVENTION openjtalk_speakToFile(OpenJTalk *oj, const char *text, const char *file);
-OPENJTALK_DLL_API bool OPENJTALK_CONVENTION openjtalk_speakToFileSjis(OpenJTalk *oj, const char *text, const char *file);
-OPENJTALK_DLL_API bool OPENJTALK_CONVENTION openjtalk_speakToFileU16(OpenJTalk *oj, const char16_t *text, const char16_t *file);
-OPENJTALK_DLL_API int OPENJTALK_CONVENTION openjtalk_speakToFile2(OpenJTalk *oj, const char *text, const char *file);
-OPENJTALK_DLL_API int OPENJTALK_CONVENTION openjtalk_speakToFileSjis2(OpenJTalk *oj, const char *text, const char *file);
-OPENJTALK_DLL_API int OPENJTALK_CONVENTION openjtalk_speakToFileU162(OpenJTalk *oj, const char16_t *text, const char16_t *file);
 
 // エラーコードを取得
 OPENJTALK_DLL_API OpenjtalkErrors OPENJTALK_CONVENTION openjtalk_getErrorCode(OpenJTalk *oj);
@@ -397,11 +344,6 @@ OPENJTALK_DLL_API OPENJTALK_ARCH OPENJTALK_CONVENTION openjtalk_getArch(OpenJTal
 
 // エラー出力に情報を詳しく出力するかどうか
 OPENJTALK_DLL_API void OPENJTALK_CONVENTION openjtalk_setVerbose(bool sw);
-
-// 発声テスト
-// textがNULLのときは「聞こえますか？」のみ発声
-// text にデータがあるときは、エラー出力にデータを16進ダンプして、UTF-16, UTF-8, SHIFT_JIS と解釈を試してみる。
-OPENJTALK_DLL_API void OPENJTALK_CONVENTION openjtalk_test(OpenJTalk *oj, void *text);
 
 // 文字コードの確認。呼び出し側の自動又は手動の文字コード変換が、正しく行われているか確認をするためのもの。
 // 引数はヌル文字で終わる1文字の文字列。異常な変換によって通常より長くなっている可能性もあるがヌル文字で終っているとみなす。

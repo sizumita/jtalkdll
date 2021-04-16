@@ -61,7 +61,5 @@ int main()
 	printf("jf = %f\n", openjtalk_get_jf(oj));
 	printf("g  = %f\n", openjtalk_get_g(oj));
 
-	openjtalk_speakAsync(oj, u8"聞こえてますか？");
-	openjtalk_waitUntilDone(oj);
 	openjtalk_clear(oj);
 }
