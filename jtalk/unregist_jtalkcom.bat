@@ -1,7 +1,7 @@
 @echo off
 openfiles > NUL 2>&1
 if not %ERRORLEVEL% == 0 (
-    echo ŠÇ—ÒŒ ŒÀ‚ÅÀs‚µ‚Ä‚­‚¾‚³‚¢
+    echo ï¿½Ç—ï¿½ï¿½ÒŒï¿½ï¿½ï¿½ï¿½Åï¿½ï¿½sï¿½ï¿½ï¿½Ä‚ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     pause
     goto :eof
 )
@@ -9,21 +9,21 @@ cd /d %~dp0
 set dll=JTalkCOMx64.dll
 if not "%PROCESSOR_ARCHITECTURE%" == "x86" (
     if exist "%dll%" (
-        echo ‰ğœÀs:%dll%
+        echo ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½s:%dll%
         rem C:\Windows\Microsoft.NET\Framework64\v4.0.30319\regasm.exe %dll% /unregister /nologo /tlb
         C:\Windows\Microsoft.NET\Framework64\v4.0.30319\regasm.exe %dll% /unregister /nologo
-        echo I—¹ƒR[ƒhF%errorlevel%
+        echo ï¿½Iï¿½ï¿½ï¿½Rï¿½[ï¿½hï¿½F%errorlevel%
     )
 )
 set dll=JTalkCOMx86.dll
 if exist "%dll%" (
-    echo ‰ğœÀs:%dll%
+    echo ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½s:%dll%
     rem C:\Windows\Microsoft.NET\Framework\v4.0.30319\regasm.exe %dll% /unregister /nologo /tlb
     C:\Windows\Microsoft.NET\Framework\v4.0.30319\regasm.exe %dll% /unregister /nologo
-    echo I—¹ƒR[ƒhF%errorlevel%
+    echo ï¿½Iï¿½ï¿½ï¿½Rï¿½[ï¿½hï¿½F%errorlevel%
 )
 
-set /p=ƒL[‚ğ‰Ÿ‚·‚ÆI—¹‚µ‚Ü‚·<NUL
+set /p=ï¿½Lï¿½[ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ÆIï¿½ï¿½ï¿½ï¿½ï¿½Ü‚ï¿½<NUL
 pause >NUL
 echo.
 

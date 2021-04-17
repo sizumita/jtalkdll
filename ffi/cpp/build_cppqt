@@ -1,9 +1,0 @@
-#!/usr/bin/env bash
-### for linux ###
-export QTDIR=~/Qt/5.9.2/gcc_64
-### for macos
-export QTDIR=/usr/local/opt/qt
-# export QTDIR=~/Qt/5.9.2/clang_64
-export QT_SELECT=qt5
-${QTDIR}/bin/qmake jtd_cppqt.pro
-make

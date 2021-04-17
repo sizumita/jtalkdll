@@ -1,1 +1,0 @@
-packageSearchIndex = [{"l":"com.github.rosmarinus.jtalk"},{"l":"すべてのパッケージ","url":"allpackages-index.html"}]

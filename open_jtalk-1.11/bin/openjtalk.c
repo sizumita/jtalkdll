@@ -34,10 +34,7 @@ OPEN_JTALK_C_START;
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdarg.h>
 #include <string.h>
-#include <math.h>
-#include <portaudio.h>
 
 #define AUDIO_PLAY_PORTAUDIO
 #if defined(AUDIO_PLAY_PORTAUDIO)

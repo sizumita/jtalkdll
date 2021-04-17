@@ -1,3 +1,0 @@
-#!/usr/bin/env bash
-gdc jsay.d jtalk.d -l jtalk -ojsay
-#dmd jsay.d jtalk.d -L-ljtalk

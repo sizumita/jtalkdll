@@ -263,37 +263,6 @@ else()
 endif()
 
 
-### look for libportaudio
-set(EXIST_PORTAUDIO 0)
-if(UNIX AND NOT APPLE)
-    if(NOT mingw_build)
-        find_library(PORTAUDIO_LIBRARY NAMES portaudio)
-        if(PORTAUDIO_LIBRARY)
-            set(EXIST_PORTAUDIO 1)
-        endif()
-    endif()
-endif()
-if(mingw_build)
-    #find_library(PORTAUDIO_LIBRARY NAMES portaudio PATHS ${CMAKE_FIND_ROOT_PATH} ONLY_CMAKE_FIND_ROOT_PATH)
-    find_library(PORTAUDIO_LIBRARY NAMES portaudio ONLY_CMAKE_FIND_ROOT_PATH)
-    if(PORTAUDIO_LIBRARY)
-        set(EXIST_PORTAUDIO 1)
-    else()
-        message(FATAL_ERROR "libportaudio.a not found\nPlease run the script 'build_portaudio_mingw'.")
-    endif()
-endif()
-if(EXIST_PORTAUDIO)
-    message("-- Portaudio Library found: ${PORTAUDIO_LIBRARY}")
-else()
-    message("-- Portaudio Library not found")
-endif()
-
-
-### portaudio subdirectory
-if(NOT EXIST_PORTAUDIO)
-    add_subdirectory(portaudio)
-endif()
-
 
 ### c/cxx flags
 if(MSVC AND WIN32)
@@ -611,18 +580,10 @@ endif()
 
 ### openjtalk
 include_directories(${OPEN_JTALK_PATH}/bin)
-include_directories(portaudio/include)
 add_library(openjtalk STATIC
     ${OPEN_JTALK_PATH}/bin/openjtalk.c
 )
 set_target_properties(openjtalk PROPERTIES COMPILE_FLAGS ${openjtalk_compile_flags})
-if(MSVC AND WIN32 OR APPLE)
-    set(PORTAUDIO portaudio_static)
-elseif(mingw_build)
-    set(PORTAUDIO ${PORTAUDIO_LIBRARY})
-else()
-    set(PORTAUDIO portaudio)
-endif()
 target_link_libraries(openjtalk
     text2mecab
     mecab2njd
@@ -636,7 +597,6 @@ target_link_libraries(openjtalk
     njd2jpcommon
     jpcommon
     HTSEngine
-    ${PORTAUDIO}
 )
 if(mingw_build OR (MSVC AND WIN32) OR  CYGWIN)
     target_link_libraries(openjtalk winmm)
@@ -646,7 +606,6 @@ endif()
 ### main project
 ### jtalk
 include_directories(${JTALK_PATH})
-include_directories(portaudio/include)
 add_library(jtalk SHARED
     ${JTALK_PATH}/jtalk.c
     ${JTALK_PATH}/jtalk.def
@@ -740,7 +699,6 @@ if(build_jtalkcom AND MSVC AND WIN32)
 
     ###project(JTalkCOM CXX)
     include_directories(${JTALK_PATH})
-    include_directories(portaudio/include)
     add_library(jtalk_static STATIC
         ${JTALK_PATH}/jtalk.c
         ${JTALK_PATH}/jtalk.def
@@ -766,45 +724,6 @@ if(build_jtalkcom AND MSVC AND WIN32)
     install(FILES ${JTALK_PATH}/regist_jtalkcom.bat   DESTINATION ${FOLDER_INSTALL_BIN})
     install(FILES ${JTALK_PATH}/unregist_jtalkcom.bat DESTINATION ${FOLDER_INSTALL_BIN})
 endif()
-
-
-### c sample
-### jsay
-add_executable(jsay
-    ${JTALK_PATH}/jsay.c
-)
-set_target_properties(jsay PROPERTIES COMPILE_FLAGS ${jtalk_c_compile_flags})
-target_link_libraries(jsay
-    jtalk
-)
-if(UNIX AND ENABLE_LICONV)
-    target_link_libraries(jsay iconv)
-endif()
-if(mingw_build)
-    set_target_properties(jsay PROPERTIES PREFIX "" SUFFIX ".exe")
-    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/jsay.exe DESTINATION ${mingw_prefix}/${FOLDER_INSTALL_BIN})
-endif()
-install(TARGETS jsay RUNTIME DESTINATION ${FOLDER_INSTALL_BIN})
-
-
-### c sample
-### jtd_c
-add_executable(jtd_c
-    ${JTALK_PATH}/jtd_c.c
-)
-set_target_properties(jtd_c PROPERTIES COMPILE_FLAGS ${jtalk_c_compile_flags})
-target_link_libraries(jtd_c
-    jtalk
-)
-if(UNIX AND ENABLE_LICONV)
-    target_link_libraries(jtd_c iconv)
-endif()
-if(mingw_build)
-    set_target_properties(jtd_c PROPERTIES PREFIX "" SUFFIX ".exe")
-    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/jtd_c.exe DESTINATION ${mingw_prefix}/${FOLDER_INSTALL_BIN})
-endif()
-install(TARGETS jtd_c RUNTIME DESTINATION ${FOLDER_INSTALL_BIN})
-
 
 ### list of dictionary files
 set(copy_list char.bin;matrix.bin;sys.dic;unk.dic;left-id.def;right-id.def;rewrite.def;pos-id.def;COPYING)

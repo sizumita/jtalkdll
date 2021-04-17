@@ -3,7 +3,7 @@
 *.lo
 *.o
 *.obj
-
+cmake-build-debug
 # Compiled dictionary files
 #char.bin
 #matrix.bin
