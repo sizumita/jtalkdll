@@ -49,17 +49,6 @@ JTALK_C_START;
 #pragma comment(lib, "shlwapi.lib")
 #endif
 
-#if defined(_WIN32) && !defined(__CYGWIN__) && !defined(__MINGW32__)
-#ifdef WINDOWS_PORTAUDIO
-#include <portaudio.h>
-#else
-#error "WinOut関数による処理はまだ実装していません。"
-#pragma comment(lib, "winmm.lib")
-#endif
-#else
-#include <portaudio.h>
-#endif
-
 #if defined(ICONV_ENABLE)
 #include <iconv.h>
 #endif
@@ -75,22 +64,6 @@ typedef enum
 	OPENJTALKCHARSET_SHIFT_JIS,
 	OPENJTALKCHARSET_UTF_16,
 } OpenjtalkCharsets;
-
-// 音声データ
-typedef struct speakData_t
-{
-	short *data;
-	size_t length;
-	size_t sampling_frequency;
-	bool stop;
-	bool pause;
-	bool paused;
-	void (*onFinished)(void);
-#if (!defined(_WIN32) || defined(__CYGWIN__) || defined(__MINGW32__)) || defined(WINDOWS_PORTAUDIO)
-	PaStream *stream;
-#else
-#endif
-} SpeakData;
 
 // 主データ
 typedef struct OpenJTalk_tag
@@ -4741,17 +4714,6 @@ OpenJTalk *openjtalk_initialize_sub(const char *voice, const char *dic, const ch
 	g_verbose = true;
 #endif
 
-#if (!defined(_WIN32) || defined(__CYGWIN__) || defined(__MINGW32__)) || defined(WINDOWS_PORTAUDIO)
-	if (Pa_Initialize() != paNoError)
-	{
-		if (g_verbose)
-		{
-			console_message(u8"PortAudioの初期化に失敗しました。\n");
-		}
-		return NULL;
-	}
-#endif
-
 	OpenJTalk *oj = (OpenJTalk *)malloc(sizeof(OpenJTalk));
 	if (!oj)
 	{
@@ -4917,10 +4879,6 @@ OPENJTALK_DLL_API void OPENJTALK_CONVENTION openjtalk_clear(OpenJTalk *oj)
 		g_lastError = OPENJTALKERROR_OBJECT_POINTER_IS_NULL;
 		return;
 	}
-#if (!defined(_WIN32) || defined(__CYGWIN__) || defined(__MINGW32__)) || defined(WINDOWS_PORTAUDIO)
-	Pa_Terminate();
-#else
-#endif
 	Open_JTalk_clear(oj->open_jtalk);
 }
 

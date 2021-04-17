@@ -24,7 +24,7 @@ fi
 build_dir=build$arch.dir
 mkdir -p ${build_dir}
 cd ${build_dir}
-cmake .. $param
+cmake .. $param -DRelease
 make
 if [[ $(uname) =~ $re ]]; then
     make install/strip
