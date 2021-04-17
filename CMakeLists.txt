@@ -266,8 +266,8 @@ endif()
 
 ### c/cxx flags
 if(MSVC AND WIN32)
-    set(CMAKE_C_FLAGS  "-MD -O2 -Ob2 -Oi -Ot -Oy -GT")
-    set(CMAKE_CXX_FLAGS "-MD -O2 -Ob2 -Oi -Ot -Oy -GT")
+    set(CMAKE_C_FLAGS  "-MD -O3 -Ob2 -Oi -Ot -Oy -GT")
+    set(CMAKE_CXX_FLAGS "-MD -O3 -Ob2 -Oi -Ot -Oy -GT")
     set(CMAKE_C_FLAGS_RELEASE "")
     set(CMAKE_CXX_FLAGS_RELEASE "")
     set(CMAKE_C_FLAGS_DEBUG "")
@@ -316,13 +316,13 @@ if(MSVC AND WIN32)
 
 else()
     ### openjtalk c flags
-    set(openjtalk_compile_flags "-O2 -Wall -g -finput-charset=UTF-8 -fexec-charset=UTF-8 -DCHARSET_UTF_8 -DASCII_HEADER")
+    set(openjtalk_compile_flags "-O3 -Wall -g -finput-charset=UTF-8 -fexec-charset=UTF-8 -DCHARSET_UTF_8 -DASCII_HEADER")
 
     ### hts_engine_API c flgas
-    set(hts_c_compile_flags "-O2 -Wall -g -finput-charset=UTF-8 -fexec-charset=UTF-8 -DCHARSET_UTF_8 -DASCII_HEADER")
+    set(hts_c_compile_flags "-O3 -Wall -g -finput-charset=UTF-8 -fexec-charset=UTF-8 -DCHARSET_UTF_8 -DASCII_HEADER")
 
     ### jtalk c flgas
-    set(jtalk_c_compile_flags "-O2 -Wall -g")
+    set(jtalk_c_compile_flags "-O3 -Wall -g")
     set(jtalk_c_compile_flags "${jtalk_c_compile_flags} -DVER_MAJOR=${JTALK_MAJOR_NUM}")
     set(jtalk_c_compile_flags "${jtalk_c_compile_flags} -DVER_MINOR=${JTALK_MINOR_NUM}")
     set(jtalk_c_compile_flags "${jtalk_c_compile_flags} -DVER_BUILD=${JTALK_BUILD_NUM}")

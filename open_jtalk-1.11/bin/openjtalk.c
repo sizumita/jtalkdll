@@ -425,58 +425,6 @@ double Open_JTalk_get_volume(Open_JTalk *open_jtalk, bool *error)
 	return HTS_Engine_get_volume(&open_jtalk->engine);
 }
 
-void Open_JTalk_set_audio_buff_size(Open_JTalk *open_jtalk, size_t i)
-{
-	if (open_jtalk == NULL)
-	{
-		return;
-	}
-	HTS_Engine_set_audio_buff_size(&open_jtalk->engine, i);
-}
-
-bool Open_JTalk_synthesis(Open_JTalk *open_jtalk, const char *txt, FILE *wavfp, FILE *logfp)
-{
-	if (open_jtalk == NULL)
-	{
-		return false;
-	}
-	bool result = false;
-	char buff[MAXBUFLEN];
-
-	text2mecab(buff, txt);
-	Mecab_analysis(&open_jtalk->mecab, buff);
-	mecab2njd(&open_jtalk->njd, Mecab_get_feature(&open_jtalk->mecab),
-			  Mecab_get_size(&open_jtalk->mecab));
-	njd_set_pronunciation(&open_jtalk->njd);
-	njd_set_digit(&open_jtalk->njd);
-	njd_set_accent_phrase(&open_jtalk->njd);
-	njd_set_accent_type(&open_jtalk->njd);
-	njd_set_unvoiced_vowel(&open_jtalk->njd);
-	njd_set_long_vowel(&open_jtalk->njd);
-	njd2jpcommon(&open_jtalk->jpcommon, &open_jtalk->njd);
-	JPCommon_make_label(&open_jtalk->jpcommon);
-	if (JPCommon_get_label_size(&open_jtalk->jpcommon) > 2)
-	{
-		if (HTS_Engine_synthesize_from_strings(&open_jtalk->engine, JPCommon_get_label_feature(&open_jtalk->jpcommon),
-											   JPCommon_get_label_size(&open_jtalk->jpcommon)) == true)
-			result = true;
-		if (wavfp != NULL)
-			HTS_Engine_save_riff(&open_jtalk->engine, wavfp);
-		if (logfp != NULL)
-		{
-			NJD_fprint(&open_jtalk->njd, logfp);
-			HTS_Engine_save_label(&open_jtalk->engine, logfp);
-			HTS_Engine_save_information(&open_jtalk->engine, logfp);
-		}
-		HTS_Engine_refresh(&open_jtalk->engine);
-	}
-	JPCommon_refresh(&open_jtalk->jpcommon);
-	NJD_refresh(&open_jtalk->njd);
-	Mecab_refresh(&open_jtalk->mecab);
-
-	return result;
-}
-
 bool Open_JTalk_generate_sounddata(Open_JTalk *open_jtalk,
 								   const char *txt,
 								   short **sounddata,

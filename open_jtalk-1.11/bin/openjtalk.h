@@ -52,10 +52,6 @@ double Open_JTalk_get_gv_weight(Open_JTalk *open_jtalk, size_t i, bool *error);
 void Open_JTalk_set_volume(Open_JTalk *open_jtalk, double f);
 double Open_JTalk_get_volume(Open_JTalk *open_jtalk, bool *error);
 
-void Open_JTalk_set_audio_buff_size(Open_JTalk *open_jtalk, size_t i);
-
-bool Open_JTalk_synthesis(Open_JTalk *open_jtalk, const char *txt, FILE * wavfp, FILE * logfp);
-
 bool Open_JTalk_generate_sounddata(Open_JTalk *open_jtalk, const char *txt, short **sounddata, size_t *size, size_t *sampling_frequency);
 
 void Open_JTalk_COPYRIGHT();
