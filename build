@@ -2,9 +2,6 @@
 # command line option
 # $1: i686 | x86_64 : target architecture
 re="(MINGW|CYGWIN)"
-if [[ $(uname) =~ $re ]]; then
-	bash build_portaudio_mingw $1
-fi
 if [ -f ../incbuild ]; then
     bash ../incbuild
 fi
