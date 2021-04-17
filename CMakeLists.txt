@@ -11,8 +11,8 @@ set(CMAKE_BUILD_TYPE Release)
 #set(target_arch x86_64)
 #set(build_jtalkcom TRUE)
 set(install_open_jtalk TRUE)
-#set(BIN_INSTALL_PREFIX "/c/open_jtalk")
-#set(DATA_INSTALL_PREFIX "/c/open_jtalk")
+set(BIN_INSTALL_PREFIX "${BUILD_DIR}/.heroku/minimaid")
+set(DATA_INSTALL_PREFIX "${BUILD_DIR}/.heroku/minimaid/OpenJTalk")
 
 
 ### archive file version
