@@ -76,38 +76,15 @@ typedef enum
 	OPENJTALKCHARSET_UTF_16,
 } OpenjtalkCharsets;
 
-// wav用データ
-struct FormatChunk
-{
-	unsigned char chunkId[4];
-	unsigned long chunkSize;
-	unsigned short audioFormat;
-	unsigned short numChannels;
-	unsigned long sampleRate;
-	unsigned long byteRate;
-	unsigned short blockAlign;
-	unsigned short bitsPerSample;
-	unsigned short extraFormatBytes;
-};
-
-struct DataChunk
-{
-	unsigned char chunkId[4];
-	unsigned long chunkSize;
-};
-
 // 音声データ
 typedef struct speakData_t
 {
 	short *data;
 	size_t length;
-	size_t counter;
 	size_t sampling_frequency;
 	bool stop;
 	bool pause;
-	bool speaking;
 	bool paused;
-	bool finished;
 	void (*onFinished)(void);
 #if (!defined(_WIN32) || defined(__CYGWIN__) || defined(__MINGW32__)) || defined(WINDOWS_PORTAUDIO)
 	PaStream *stream;
@@ -149,7 +126,6 @@ typedef struct OpenJTalk_tag
 	double speed;
 	double additional_half_tone;
 	double volume;
-	size_t audio_buff_size;
 
 	// エラー内容を表す番号
 	OpenjtalkErrors errorCode;
@@ -3304,54 +3280,6 @@ check_charset:
 	Open_JTalk_load_dic(oj->open_jtalk, temp);
 #endif
 	return true;
-}
-
-/******************************************************************
-** オーディオデータ出力関連関数
-*/
-
-static void speak_pa_finished(void *userData)
-{
-	SpeakData *data = (SpeakData *)userData;
-	if (data == NULL)
-	{
-		return;
-	}
-
-	if (data->data != NULL && !data->pause)
-	{
-		free(data->data);
-		data->data = NULL;
-	}
-
-	Pa_CloseStream(data->stream);
-	data->speaking = false;
-
-	if (data->pause)
-	{
-		data->paused = true;
-	}
-	else
-	{
-		data->finished = true;
-	}
-
-	if (g_verbose)
-	{
-		if (data->paused)
-		{
-			console_message(u8"非同期発声一時停止\n");
-		}
-		else
-		{
-			console_message(u8"非同期発声完了\n");
-		}
-	}
-
-	if (data->onFinished != NULL && !data->paused)
-	{
-		(data->onFinished)();
-	}
 }
 
 OPENJTALK_DLL_API bool OPENJTALK_CONVENTION openjtalk_generatePCM(OpenJTalk *oj, const char *txt, short **data, size_t *size)
