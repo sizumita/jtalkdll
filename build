@@ -21,7 +21,7 @@ fi
 build_dir=build$arch.dir
 mkdir -p ${build_dir}
 cd ${build_dir}
-cmake .. $param -DCMAKE_BUILD_TYPE=Release
+cmake .. $param -D CMAKE_BUILD_TYPE=Release
 make
 if [[ $(uname) =~ $re ]]; then
     make install/strip
